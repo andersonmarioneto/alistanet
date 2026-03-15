@@ -1,0 +1,191 @@
+
+---
+
+# **Fluxo do Sistema AlistaNet – Processo de Candidatura**
+
+## **1️⃣ Criação de conta do candidato**
+
+**Objetivo:** Permitir que o candidato se registre no sistema.
+
+* **Tabela envolvida:** `candidato`
+* **Ações do sistema:**
+
+  1. O candidato preenche nome, email, senha, telefone, data de nascimento e gênero.
+  2. A senha é armazenada usando `password_hash()`.
+  3. Status inicial: `'ativo'`.
+* **SQL exemplo:**
+
+```sql
+INSERT INTO candidato (nome, email, senha_hash, telefone, data_nascimento, genero)
+VALUES ('Anderson Neto', 'anderson.neto@email.com', 'hashSegura', '924000001', '2005-03-15', 'M');
+```
+
+---
+
+## **2️⃣ Preenchimento do perfil**
+
+**Objetivo:** Completar informações importantes do candidato.
+
+* **Tabelas envolvidas:** `candidato`, `habilitacao`, `documento`
+
+* **Ações do sistema:**
+
+  1. O candidato adiciona município, província e habilitação escolar.
+  2. Envia documentos obrigatórios: BI, certificado, foto, atestado médico.
+  3. Cada documento é registrado na tabela `documento`.
+
+* **SQL exemplo documentos:**
+
+```sql
+INSERT INTO documento (candidato_id, tipo, caminho_arquivo)
+VALUES (1, 'bi', '/uploads/anderson_bi.pdf');
+```
+
+* **SQL exemplo habilitação:**
+
+```sql
+INSERT INTO habilitacao (candidato_id, nivel, instituicao, curso, ano_conclusao)
+VALUES (1, 'II Ciclo', 'Escola Secundária de Luanda', 'Ciências Sociais', 2023);
+```
+
+---
+
+## **3️⃣ Escolha do processo de recrutamento**
+
+**Objetivo:** Selecionar para qual processo o candidato quer se candidatar.
+
+* **Tabela envolvida:** `processo_recrutamento`
+
+* **Ações do sistema:**
+
+  1. O candidato visualiza processos ativos (`status = 'aberto'`).
+  2. Seleciona a categoria militar correspondente.
+
+* **Regra do sistema:**
+
+  * Um candidato só pode se candidatar uma vez por processo (`unique_candidato_processo`).
+
+---
+
+## **4️⃣ Submissão da candidatura**
+
+**Objetivo:** Registrar oficialmente a candidatura do candidato.
+
+* **Tabela envolvida:** `candidatura`
+
+* **Ações do sistema:**
+
+  1. Cria registro com `status = 'pendente'`.
+  2. Guarda data de submissão automaticamente (`data_submissao`).
+
+* **SQL exemplo:**
+
+```sql
+INSERT INTO candidatura (candidato_id, processo_id)
+VALUES (1, 1);
+```
+
+---
+
+## **5️⃣ Avaliação pelo administrador**
+
+**Objetivo:** Validar documentos, aptidão física e requisitos do candidato.
+
+* **Tabelas envolvidas:** `candidatura`, `progresso_candidatura`, `fase_processo`, `administrador`
+
+* **Ações do sistema:**
+
+  1. Cada fase do processo é registrada na tabela `fase_processo` (Ex: Inscrição, Triagem, Teste Físico, Exame Médico).
+  2. Cria-se um registro para cada fase em `progresso_candidatura` com `status = 'pendente'`.
+  3. Administrador altera o status conforme avaliação (`pendente → concluida/reprovada`).
+
+* **SQL exemplo:**
+
+```sql
+INSERT INTO progresso_candidatura (candidatura_id, fase_id, status)
+VALUES (1, 1, 'concluida');
+```
+
+---
+
+## **6️⃣ Atualização do estado final da candidatura**
+
+**Objetivo:** Informar o candidato sobre aprovação ou rejeição.
+
+* **Tabela envolvida:** `candidatura`
+
+* **Ações do sistema:**
+
+  1. Após todas as fases concluídas, o administrador define:
+
+     * `status = 'aprovado'` ou `status = 'rejeitado'`
+     * Opcional: `nota` ou `motivo_rejeicao`
+
+* **SQL exemplo aprovação:**
+
+```sql
+UPDATE candidatura
+SET status = 'aprovado', nota = 85.5
+WHERE id = 1;
+```
+
+* **SQL exemplo rejeição:**
+
+```sql
+UPDATE candidatura
+SET status = 'rejeitado', motivo_rejeicao = 'Documentos incompletos'
+WHERE id = 2;
+```
+
+---
+
+## **7️⃣ Acompanhamento pelo candidato**
+
+**Objetivo:** Permitir que o candidato veja o progresso de cada fase.
+
+* **Tabelas envolvidas:** `progresso_candidatura`, `fase_processo`
+
+* **Ações do sistema:**
+
+  1. Candidato acessa o painel e vê todas as fases do processo com status: `'pendente'`, `'concluida'`, `'reprovada'`.
+  2. Visualiza resultado final da candidatura.
+
+* **SQL exemplo de consulta:**
+
+```sql
+SELECT f.nome_fase, p.status, p.observacao
+FROM progresso_candidatura p
+JOIN fase_processo f ON f.id = p.fase_id
+WHERE p.candidatura_id = 1;
+```
+
+---
+
+## **Resumo visual do fluxo**
+
+```
+[Candidato cria conta] 
+        ↓
+[Preenche perfil e envia documentos] 
+        ↓
+[Seleciona processo de recrutamento] 
+        ↓
+[Submete candidatura] 
+        ↓
+[Administrador avalia cada fase]
+        ↓
+[Atualiza status final da candidatura]
+        ↓
+[Candidato acompanha resultado]
+```
+
+---
+
+💡 **Notas importantes:**
+
+* Cada candidato pode ter **uma candidatura por processo**.
+* Cada candidatura passa por **várias fases**, controladas em `progresso_candidatura`.
+* Todos os documentos e habilitações são **validados pelo administrador** antes de avançar.
+* O sistema mantém **registro histórico de cada fase**, útil para auditoria.
+
+

@@ -1,0 +1,130 @@
+-- AlistaNet - Schema inicial para MySQL (XAMPP)
+-- Crie o banco de dados com: CREATE DATABASE alistanet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- Em seguida, execute este script no banco "alistanet".
+CREATE DATABASE alistanet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+use alistanet;
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Tabelas principais
+
+DROP TABLE IF EXISTS progresso_candidatura;
+DROP TABLE IF EXISTS candidatura;
+DROP TABLE IF EXISTS fase_processo;
+DROP TABLE IF EXISTS processo_recrutamento;
+DROP TABLE IF EXISTS categoria_militar;
+DROP TABLE IF EXISTS habilitacao;
+DROP TABLE IF EXISTS documento;
+DROP TABLE IF EXISTS noticia;
+DROP TABLE IF EXISTS administrador;
+DROP TABLE IF EXISTS candidato;
+
+CREATE TABLE candidato (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(150) NOT NULL,
+  email VARCHAR(180) NOT NULL UNIQUE,
+  senha_hash VARCHAR(255) NOT NULL,
+  telefone VARCHAR(50),
+  data_nascimento DATE,
+  genero ENUM('M','F','Outro') DEFAULT 'Outro',
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  status ENUM('ativo','inativo','bloqueado') NOT NULL DEFAULT 'ativo'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE administrador (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(150) NOT NULL,
+  email VARCHAR(180) NOT NULL UNIQUE,
+  senha_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin','gestor','avaliador') NOT NULL DEFAULT 'gestor',
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE noticia (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  titulo VARCHAR(255) NOT NULL,
+  conteudo TEXT NOT NULL,
+  publicado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  autor_id INT UNSIGNED NOT NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  FOREIGN KEY (autor_id) REFERENCES administrador(id) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE categoria_militar (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(120) NOT NULL,
+  descricao TEXT,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE processo_recrutamento (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  titulo VARCHAR(200) NOT NULL,
+  descricao TEXT,
+  categoria_id INT UNSIGNED,
+  data_inicio DATE,
+  data_fim DATE,
+  status ENUM('aberto','fechado','em_analise') NOT NULL DEFAULT 'aberto',
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (categoria_id) REFERENCES categoria_militar(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE fase_processo (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  processo_id INT UNSIGNED NOT NULL,
+  nome VARCHAR(150) NOT NULL,
+  descricao TEXT,
+  ordem INT UNSIGNED NOT NULL DEFAULT 1,
+  data_inicio DATE,
+  data_fim DATE,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  FOREIGN KEY (processo_id) REFERENCES processo_recrutamento(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE candidatura (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  candidato_id INT UNSIGNED NOT NULL,
+  processo_id INT UNSIGNED NOT NULL,
+  data_submissao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  status ENUM('pendente','em_analise','aprovado','rejeitado') NOT NULL DEFAULT 'pendente',
+  nota DECIMAL(5,2) DEFAULT NULL,
+  motivo_rejeicao TEXT,
+  FOREIGN KEY (candidato_id) REFERENCES candidato(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (processo_id) REFERENCES processo_recrutamento(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE progresso_candidatura (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  candidatura_id INT UNSIGNED NOT NULL,
+  fase_id INT UNSIGNED NOT NULL,
+  status ENUM('pendente','concluida','reprovada') NOT NULL DEFAULT 'pendente',
+  observacao TEXT,
+  atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (candidatura_id) REFERENCES candidatura(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (fase_id) REFERENCES fase_processo(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE documento (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  candidato_id INT UNSIGNED NOT NULL,
+  tipo ENUM('bi','certificado','foto','atestado_medico','outro') NOT NULL,
+  caminho_arquivo VARCHAR(255) NOT NULL,
+  enviado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  valido TINYINT(1) NOT NULL DEFAULT 1,
+  FOREIGN KEY (candidato_id) REFERENCES candidato(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE habilitacao (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  candidato_id INT UNSIGNED NOT NULL,
+  nivel VARCHAR(120) NOT NULL,
+  instituicao VARCHAR(255),
+  curso VARCHAR(255),
+  ano_conclusao YEAR,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (candidato_id) REFERENCES candidato(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;

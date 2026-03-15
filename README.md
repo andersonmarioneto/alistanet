@@ -76,3 +76,16 @@ Todos os relacionamentos usam **chaves estrangeiras** para manter a integridade 
 1. Cria o repositório:
 
 https://github.com/andersonmarioneto/alisnet.git
+
+---
+
+## 🧩 Configuração do Banco de Dados (XAMPP/MySQL)
+
+Para criar o banco de dados e gerar as tabelas iniciais, siga as instruções em:
+
+- `docs/DB-SETUP.md`
+
+
+---
+
+> ⚠️ Este repositório atualmente contém apenas documentação e scripts de configuração iniciais (DB/schema). O código do backend e frontend será adicionado em etapas posteriores.
